@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style>
+		body{
+			background: #222;
+		}
+		
+		div#game{
+			float: center;
+		}
+		
+	</style>
+	<title>TRON</title>
+</head>
+
+<body>
+	<h2 align="center"><font color="#0B0">TRON</font></h2>
+	<!-- <h3 align="center"><font color="#0B0">SCORE</font></h3> -->
+	<div id="game"><canvas id="gameCanvas" width="800" height="600" style="background: #444; display: block; margin: 0 auto;"></canvas> </div>
+	<br>	
+	<div id="score"> <canvas id="scoreCanvas" width="800" height="50" style="border:2px solid #000000; display: block; margin: 0 auto;"> </canvas> </div>
+<script>
+	var Direction = {
+		UP: 1,
+		RIGHT: 2,
+		DOWN: 3, 
+		LEFT: 4
+	};	
+
+	function getRandomDirection(){
+		var direction = Math.floor(Math.random()*4) + 1;
+		var randomDirection = Direction.UP;
+		switch(direction){
+			case 1:
+				randomDirection = Direction.UP;
+				break;
+			case 2:
+				randomDirection = Direction.RIGHT;
+				break;
+			case 3:
+				randomDirection = Direction.DOWN;
+				break;
+			case 4:
+				randomDirection = Direction.LEFT;
+				break;
+			default:
+		}
+		return randomDirection;
+	}
+
+	var playerDirection = Direction.RIGHT;
+	var computerDirection = Direction.LEFT;
+	var x = -10, y = 200;
+	var computerX = 800, computerY = 310;
+	
+	class Body{
+		constructor(x, y){
+			this.x = x;
+			this.y = y;
+		}
+	}
+
+	var body = [];
+	var computerBody = [];
+	var currentLevel = 1;
+	var lives = 3;
+	var score = body.length;	
+	var isPlayerCollision = false, isComputerCollision = false;
+
+	function resetGame(isPlayerWin){
+		body = [];
+		x = -10, y = 200;
+		computerX = 800, computerY = 310;
+		playerDirection = Direction.RIGHT;
+		computerDirection = Direction.LEFT;
+		if(!isPlayerWin){
+			score = 0;
+		}	
+	}
+
+	function drawScore(){
+		var canvas = document.getElementById('scoreCanvas');
+		var ctx = canvas.getContext('2d');
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.font = "bold 20px Arial";
+		ctx.fillStyle = "#0B0";
+		ctx.fillText("SCORE: " + score , 10, 30);
+		drawLives();
+	}
+
+	function drawLives(){
+		var canvas = document.getElementById('scoreCanvas');
+		var ctx = canvas.getContext('2d');
+		ctx.beginPath();
+		ctx.fillStyle = "#0B0";
+		for(var i = 1; i <= lives; i++){
+			ctx.arc(600 + 45*i, 25, 20, 0, 2*Math.PI);
+			ctx.fill();
+		}
+	}
+
+	function gameloop(){
+		update();
+		draw();
+	}
+
+	function update(){
+		body.push(new Body(x, y));
+		computerBody.push(new Body(computerX, computerY));	
+		score++;
+
+		switch(playerDirection){
+			case Direction.UP:
+				y -= 10;
+				break;
+			case Direction.RIGHT:
+				x += 10;
+				break;
+			case Direction.DOWN:
+				y += 10;
+				break;
+			case Direction.LEFT:
+				x -= 10;
+				break;
+			default:
+		}
+		
+		switch(computerDirection){
+			case Direction.UP:
+				computerY -= 10;
+				break;
+			case Direction.RIGHT:
+				computerX += 10;
+				break;
+			case Direction.DOWN:
+				computerY += 10;
+				break;
+			case Direction.LEFT:
+				computerX -= 10;
+				break;
+			default:
+		}
+		
+		checkCollision();
+	}
+	
+	function checkCollision(){
+		// If the computer is about to move into a wall body then MOVE!!
+		var arrLength = body.length;
+		// The player and computer are of the same length since the body is generating at the same speed
+		var futureX = computerX, futureY = computerY;
+		switch(computerDirection){
+			case Direction.UP:
+				futureY -= 10;
+				break;
+			case Direction.RIGHT:
+				futureX += 10;
+				break;
+			case Direction.DOWN:
+				futureY += 10;
+				break;
+			case Direction.LEFT:
+				futureX -= 10;
+				break;
+			default:
+		}
+		// Check if the computer is going to crash into a wall
+		if(!(futureX >= 0 && futureX <= 800 && futureY >= 0 && futureY <= 600)){
+			computerDirection += 1;
+			computerDirection = (computerDirection > 4) ? 1: computerDirection;
+		}
+
+		for(var i = 0; i < arrLength; i++){
+			// Check for Player Collision		
+			if(body[i].x === x && body[i].y === y){
+				isPlayerCollision = true;
+				break;
+			}
+			if(computerBody[i].x === x && computerBody[i].y === y){
+				isPlayerCollision = true;
+				break;
+			}
+			
+			// Check for computer collision
+			if(body[i].x === computerX && body[i].y === computerY){
+				isComputerCollision = true;
+				break;
+			}
+			if(computerBody[i].x === computerX && computerBody[i].y === computerY){
+				isComputerCollision = true;
+				break;
+			}
+			// Check if the computer will crash into itself or the player next turn	
+			if(body[i].x === futureX && body[i].y === futureY){
+				computerDirection += 1;
+				computerDirection = (computerDirection > 4) ? 1: computerDirection;
+			}
+			if(computerBody[i].x === futureX && computerBody[i].y === futureY){
+				computerDirection += 1;
+				computerDirection = (computerDirection > 4) ? 1: computerDirection;
+			}
+
+			
+		}
+		// Check for wall collisions
+		if(!(x >= 0 && x <= 800 && y >= 0 && y <= 600)){
+			isPlayerCollision = true
+		}
+
+		if(!(computerX >= 0 && computerX <= 800 && computerY >= 0 && computerY <= 600)){
+			isComputerCollision = true;
+		}
+		// Check if there is no collision
+	}
+
+	function draw(){
+		var canvas = document.getElementById('gameCanvas');
+		var ctx = canvas.getContext('2d');
+		if(isPlayerCollision){
+			if(lives === 0){
+				alert("Game Over. You Lose.");
+			}
+			else{
+				alert("Try Again.");
+				lives--;
+			}
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			resetGame(true);
+		}
+		else if(isComputerCollision){
+			alert("You Win!");
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			resetGame(false);
+		}
+		else{
+			ctx.beginPath();
+			
+			ctx.fillStyle = "red";
+			ctx.fillRect(x, y, 10, 10);
+			
+			ctx.fillStyle = "blue";
+			ctx.fillRect(computerX, computerY, 10, 10);
+			
+			ctx.endPath();
+		}
+	}
+		
+	function keyUpHandler(e){
+	}
+		
+	function keyDownHandler(e){
+		if(e.keyCode == 37 && playerDirection != Direction.RIGHT){
+			playerDirection = Direction.LEFT;
+		}
+		else if(e.keyCode == 38 && playerDirection != Direction.DOWN){
+			playerDirection = Direction.UP;
+		}
+		else if(e.keyCode == 39 && playerDirection != Direction.LEFT){
+			playerDirection = Direction.RIGHT;
+		}
+		else if(e.keyCode == 40 && playerDirection != Direction.UP){
+			playerDirection = Direction.DOWN;
+		}
+	}
+
+	document.addEventListener("keyup", keyUpHandler, false);
+	document.addEventListener("keydown", keyDownHandler, false);
+	
+	setInterval(gameloop, 100);
+	setInterval(drawScore, 100);
+</script>
+
+</body>
+
+</html>
+
